@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BYTE PATCHER</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #05060a; color: #e0e0e0; min-height: 100vh; padding: 12px;
+    background-image: radial-gradient(circle at 50% 0%, #0a1a22 0%, #05060a 60%);
+  }
+  .box {
+    width: 100%; max-width: 560px; margin: 0 auto;
+    background: #0a0d14; border: 1px solid #1f3a4a;
+    border-radius: 14px; padding: 16px;
+    box-shadow: 0 0 40px rgba(0,255,255,0.1);
+  }
+  h1 {
+    text-align: center; font-size: 18px; letter-spacing: 2px; margin-bottom: 4px;
+    background: linear-gradient(90deg, #7df9ff, #ff00ff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    font-weight: 900;
+  }
+  .sub { text-align: center; font-size: 10px; color: #666; margin-bottom: 14px; letter-spacing: 1px; }
+  .section { border: 1px solid #1a2a35; border-radius: 10px; padding: 12px; margin-bottom: 12px; background: #0d0d0d; }
+  .section-title { font-size: 11px; font-weight: 700; color: #7df9ff; margin-bottom: 10px; letter-spacing: 1.5px; text-transform: uppercase; }
+  .file-input-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; z-index: -1; pointer-events: none; }
+  .file-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #7df9ff, #1a6f8a);
+    color: #000; border: none; border-radius: 18px;
+    padding: 10px 18px; font-size: 12px; font-weight: 900;
+    letter-spacing: 0.5px; cursor: pointer; user-select: none;
+    transition: transform 0.1s;
+  }
+  .file-label:active { transform: scale(0.96); }
+  .file-label::before { content: '📁'; font-size: 14px; }
+  .file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .file-name { font-size: 10px; color: #888; flex: 1; min-width: 100px; padding: 6px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-name.has-file { color: #00ff88; }
+  .label-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; color: #7df9ff; margin-bottom: 6px; }
+  .badge { background: #1f2d3a; color: #7df9ff; border-radius: 4px; padding: 2px 8px; font-size: 10px; border: 1px solid #2a3a4a; }
+  textarea {
+    width: 100%; height: 110px;
+    background: #050505; border: 1px solid #1f3a4a;
+    border-radius: 6px; color: #e0e0e0;
+    font-size: 13px; padding: 10px; resize: vertical;
+    outline: none; font-family: 'Courier New', monospace; line-height: 1.6;
+    letter-spacing: 0.5px;
+  }
+  textarea:focus { border-color: #7df9ff; }
+  .btn {
+    width: 100%; padding: 13px; border-radius: 8px;
+    font-size: 13px; font-weight: 900; letter-spacing: 1.5px;
+    cursor: pointer; border: 1px solid #1f3a4a;
+    background: #0a0a0a; color: #fff;
+    font-family: 'Courier New', monospace; transition: transform 0.1s;
+    margin-top: 8px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: linear-gradient(135deg, #a0f0ff, #7df9ff); color: #000; border: none; box-shadow: 0 0 20px rgba(160,240,255,0.4); }
+  .btn-primary:disabled { background: #1f2d3a; color: #555; box-shadow: none; cursor: not-allowed; }
+  .btn-vip { background: linear-gradient(135deg, #ff00ff, #7df9ff); color: #000; border: none; box-shadow: 0 0 20px rgba(255,0,255,0.4); }
+  .btn-vip:disabled { background: #1f2d3a; color: #555; box-shadow: none; cursor: not-allowed; }
+  .log {
+    background: #000; border: 1px solid #1f3a4a; border-radius: 8px;
+    padding: 10px; min-height: 140px; max-height: 240px; overflow-y: auto;
+    font-size: 10px; line-height: 1.6; white-space: pre-wrap;
+    word-break: break-all; color: #00ff88;
+  }
+  .log .err { color: #ff4444; }
+  .log .info { color: #7df9ff; }
+  .log .warn { color: #ffaa00; }
+  .log .vip { color: #ff00ff; font-weight: 900; }
+  .log .ok { color: #00ff88; font-weight: 900; }
+  .hint { font-size: 10px; color: #666; margin-top: 8px; line-height: 1.5; }
+  .hint b { color: #ffaa00; }
+  .hint code { color: #7df9ff; background: #0a0d14; padding: 1px 4px; border-radius: 3px; }
+  .preview {
+    background: #050505; border: 1px solid #1f3a4a; border-radius: 6px;
+    padding: 8px; margin-top: 8px; font-size: 11px;
+    color: #888; line-height: 1.5; word-break: break-all;
+    min-height: 30px;
+  }
+  .preview b { color: #00ff88; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: #1f3a4a; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>BYTE PATCHER</h1>
+  <div class="sub">NHẬP BYTE LIỀN KỀ • TỰ TÌM • TỰ THAY</div>
+
+  <div class="section">
+    <div class="section-title">1. CHỌN FILE</div>
+    <div class="file-row">
+      <label class="file-label" for="fi">CHỌN TỆP</label>
+      <input type="file" id="fi" class="file-input-hidden" accept="*/*">
+      <span class="file-name" id="fname">chưa chọn tệp nào</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">2. BYTE GỐC (cần tìm)</div>
+    <div class="label-row">
+      <span>Mỗi dòng 1 dãy byte liền kề</span>
+      <span class="badge" id="countOld">0</span>
+    </div>
+    <textarea id="oldBytes" placeholder="556E697479465300&#10;323031382E342E31326631"></textarea>
+    <div class="preview" id="previewOld">Nhập byte dạng hex liền kề, KHÔNG cần dấu cách. Ví dụ: <b>556E6974794653</b></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3. BYTE THAY THẾ (mới)</div>
+    <div class="label-row">
+      <span>Mỗi dòng 1 dãy byte tương ứng</span>
+      <span class="badge" id="countNew">0</span>
+    </div>
+    <textarea id="newBytes" placeholder="556E697479465301&#10;323032322E332E34376631"></textarea>
+    <div class="preview" id="previewNew">Nhập byte mới liền kề. Số byte phải <b>bằng hoặc ít hơn</b> byte gốc.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">4. THỰC HIỆN</div>
+    <button class="btn btn-primary" id="btnMake" disabled>PATCH</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">5. XUẤT FILE</div>
+    <button class="btn btn-vip" id="btnSave" disabled>CHIA SẺ FILE ĐÃ PATCH</button>
+    <button class="btn" id="btnSaveOrig" disabled>CHIA SẺ FILE GỐC</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">6. LOG</div>
+    <div class="log" id="log">Sẵn sàng...</div>
+  </div>
+</div>
+
+<script>
+let originalBuffer = null;
+let originalName = '';
+let madeBuffer = null;
+
+const fi = document.getElementById('fi');
+const fname = document.getElementById('fname');
+const oldArea = document.getElementById('oldBytes');
+const newArea = document.getElementById('newBytes');
+const countOld = document.getElementById('countOld');
+const countNew = document.getElementById('countNew');
+const btnMake = document.getElementById('btnMake');
+const btnSave = document.getElementById('btnSave');
+const btnSaveOrig = document.getElementById('btnSaveOrig');
+const logEl = document.getElementById('log');
+const previewOld = document.getElementById('previewOld');
+const previewNew = document.getElementById('previewNew');
+
+function log(msg, cls) {
+  const t = new Date().toLocaleTimeString('vi-VN');
+  const d = document.createElement('div');
+  d.className = cls || 'info';
+  d.textContent = '[' + t + '] ' + msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+  if (logEl.children.length > 500) logEl.removeChild(logEl.firstChild);
+}
+
+// ==== PARSE BYTE LIỀN KỀ ====
+// Input: "556E697479465300" → Uint8Array [0x55,0x6E,0x69,0x74,0x79,0x46,0x53,0x00]
+// Cũng chấp nhận có khoảng trắng/dấu phẩy để linh hoạt — nhưng không cần
+function parseBytes(line) {
+  line = line.trim();
+  if (line === '') return null;
+
+  // Bỏ mọi ký tự không phải hex (dấu cách, dấu phẩy, dấu gạch, 0x)
+  let clean = line.replace(/0x/gi, '').replace(/[\s,\-_:\.]+/g, '');
+
+  if (clean.length === 0) return null;
+  if (!/^[0-9a-fA-F]+$/.test(clean)) {
+    return { error: 'Chứa ký tự không phải hex: "' + line + '"' };
+  }
+  if (clean.length % 2 !== 0) {
+    return { error: 'Số ký tự hex lẻ (' + clean.length + '), phải chẵn. Ví dụ: 556E69' };
+  }
+
+  const bytes = [];
+  for (let i = 0; i < clean.length; i += 2) {
+    bytes.push(parseInt(clean.substr(i, 2), 16));
+  }
+  return { bytes: new Uint8Array(bytes) };
+}
+
+function updateCounts() {
+  const o = oldArea.value.split('\n').filter(function(l) { return l.trim() !== ''; }).length;
+  const n = newArea.value.split('\n').filter(function(l) { return l.trim() !== ''; }).length;
+  countOld.textContent = o;
+  countNew.textContent = n;
+  btnMake.disabled = !(originalBuffer && o > 0 && n > 0);
+  updatePreview();
+}
+
+function updatePreview() {
+  const oldLines = oldArea.value.split('\n').filter(function(l) { return l.trim() !== ''; });
+  if (oldLines.length === 0) {
+    previewOld.innerHTML = 'Nhập byte dạng hex liền kề, KHÔNG cần dấu cách. Ví dụ: <b>556E6974794653</b>';
+  } else {
+    let out = '';
+    for (let i = 0; i < Math.min(oldLines.length, 3); i++) {
+      const p = parseBytes(oldLines[i]);
+      if (p && p.bytes) {
+        const hexStr = Array.from(p.bytes).map(function(b) { return b.toString(16).toUpperCase().padStart(2,'0'); }).join(' ');
+        out += '<b>' + oldLines[i].trim() + '</b> → ' + p.bytes.length + ' byte [' + hexStr + ']<br>';
+      } else if (p && p.error) {
+        out += '<span style="color:#ff4444">' + p.error + '</span><br>';
+      }
+    }
+    if (oldLines.length > 3) out += '... và ' + (oldLines.length - 3) + ' dòng nữa';
+    previewOld.innerHTML = out;
+  }
+
+  const newLines = newArea.value.split('\n').filter(function(l) { return l.trim() !== ''; });
+  if (newLines.length === 0) {
+    previewNew.innerHTML = 'Nhập byte mới liền kề. Số byte phải <b>bằng hoặc ít hơn</b> byte gốc.';
+  } else {
+    let out = '';
+    for (let i = 0; i < Math.min(newLines.length, 3); i++) {
+      const p = parseBytes(newLines[i]);
+      if (p && p.bytes) {
+        const hexStr = Array.from(p.bytes).map(function(b) { return b.toString(16).toUpperCase().padStart(2,'0'); }).join(' ');
+        out += '<b>' + newLines[i].trim() + '</b> → ' + p.bytes.length + ' byte [' + hexStr + ']<br>';
+      } else if (p && p.error) {
+        out += '<span style="color:#ff4444">' + p.error + '</span><br>';
+      }
+    }
+    if (newLines.length > 3) out += '... và ' + (newLines.length - 3) + ' dòng nữa';
+    previewNew.innerHTML = out;
+  }
+}
+
+oldArea.addEventListener('input', updateCounts);
+newArea.addEventListener('input', updateCounts);
+
+fi.addEventListener('change', function(e) {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  originalName = f.name;
+  fname.textContent = f.name;
+  fname.classList.add('has-file');
+  madeBuffer = null;
+  btnSave.disabled = true;
+
+  const r = new FileReader();
+  r.onload = function(ev) {
+    originalBuffer = ev.target.result;
+    btnSaveOrig.disabled = false;
+    log('Đã nạp: ' + f.name + ' (' + f.size + ' bytes)', 'info');
+    updateCounts();
+  };
+  r.onerror = function() { log('LỖI đọc file.', 'err'); };
+  r.readAsArrayBuffer(f);
+});
+
+fi.addEventListener('click', function(e) { e.target.value = ''; });
+
+// Tìm mọi vị trí khớp byte sequence
+function findAllBytes(arr, w) {
+  const L = w.length;
+  const hits = [];
+  if (L === 0) return hits;
+  for (let i = 0; i + L <= arr.length; i++) {
+    if (arr[i] !== w[0]) continue;
+    let ok = true;
+    for (let j = 1; j < L; j++) {
+      if (arr[i+j] !== w[j]) { ok = false; break; }
+    }
+    if (!ok) continue;
+    hits.push(i);
+  }
+  return hits;
+}
+
+btnMake.addEventListener('click', function() {
+  if (!originalBuffer) return;
+
+  const oldLines = oldArea.value.split('\n').filter(function(l) { return l.trim() !== ''; });
+  const newLines = newArea.value.split('\n').filter(function(l) { return l.trim() !== ''; });
+
+  log('═══ BẮT ĐẦU PATCH ═══', 'vip');
+
+  const arr = new Uint8Array(originalBuffer);
+  const out = new Uint8Array(arr.length);
+  out.set(arr);
+
+  let totalPatched = 0;
+  let totalSkipped = 0;
+
+  for (let k = 0; k < oldLines.length; k++) {
+    const oldParsed = parseBytes(oldLines[k]);
+    if (!oldParsed || !oldParsed.bytes) {
+      log('Dòng ' + (k+1) + ' byte gốc lỗi: ' + (oldParsed ? oldParsed.error : 'trống'), 'err');
+      totalSkipped++;
+      continue;
+    }
+
+    const newParsed = newLines[k] !== undefined ? parseBytes(newLines[k]) : null;
+    if (!newParsed || !newParsed.bytes) {
+      log('Dòng ' + (k+1) + ' byte mới lỗi/trống. Bỏ qua.', 'warn');
+      totalSkipped++;
+      continue;
+    }
+
+    const oldB = oldParsed.bytes;
+    const newB = newParsed.bytes;
+
+    if (newB.length > oldB.length) {
+      log('BỎ QUA dòng ' + (k+1) + ': byte mới dài hơn byte gốc (' + newB.length + ' > ' + oldB.length + ')', 'warn');
+      totalSkipped++;
+      continue;
+    }
+
+    const hits = findAllBytes(arr, oldB);
+    if (hits.length === 0) {
+      log('BỎ QUA dòng ' + (k+1) + ': không tìm thấy dãy byte trong file', 'warn');
+      totalSkipped++;
+      continue;
+    }
+
+    // Đệm 0x00 cho đủ độ dài cũ — KHÔNG thay đổi size file
+    const finalB = new Uint8Array(oldB.length);
+    finalB.set(newB, 0);
+
+    for (let h = 0; h < hits.length; h++) {
+      for (let i = 0; i < oldB.length; i++) {
+        out[hits[h] + i] = finalB[i];
+      }
+    }
+
+    log('OK dòng ' + (k+1) + ': tìm ' + hits.length + ' vị trí, ghi ' + oldB.length + ' byte', 'ok');
+    for (let h = 0; h < Math.min(hits.length, 5); h++) {
+      log('   offset 0x' + hits[h].toString(16).toUpperCase().padStart(8,'0'), 'info');
+    }
+    if (hits.length > 5) log('   ... và ' + (hits.length - 5) + ' vị trí nữa', 'info');
+    totalPatched++;
+  }
+
+  if (totalPatched === 0) {
+    log('THẤT BẠI: không có gì được patch.', 'err');
+    return;
+  }
+
+  madeBuffer = out.buffer;
+  btnSave.disabled = false;
+
+  log('═══ XONG. ' + totalPatched + ' dòng patch. Bỏ qua ' + totalSkipped + ' ═══', 'vip');
+  log('File giữ nguyên kích thước: ' + arr.length + ' bytes (KHÔNG đổi)', 'ok');
+  log('Offset toàn file KHÔNG dịch.', 'ok');
+});
+
+function downloadFile(buf, name) {
+  const blob = new Blob([buf], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  if (navigator.share && navigator.canShare) {
+    const file = new File([blob], name, { type: 'application/octet-stream' });
+    if (navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Lưu file' })
+        .then(function() { log('Đã chia sẻ: ' + name, 'vip'); })
+        .catch(function() { fallback(url, name); });
+      return;
+    }
+  }
+  fallback(url, name);
+}
+
+function fallback(url, name) {
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+  log('Đã tải: ' + name, 'vip');
+}
+
+btnSave.addEventListener('click', function() {
+  if (!madeBuffer) return;
+  const out = originalName.replace(/(\.[^.]+)$/, '_patched$1') || 'assetindexer_patched';
+  downloadFile(madeBuffer, out);
+});
+
+btnSaveOrig.addEventListener('click', function() {
+  if (!originalBuffer) return;
+  const out = originalName.replace(/(\.[^.]+)$/, '_orig$1') || 'assetindexer_orig';
+  downloadFile(originalBuffer, out);
+});
+
+updateCounts();
+</script>
+
+</body>
+</html>
